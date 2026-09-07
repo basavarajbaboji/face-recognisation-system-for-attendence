@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Campus Face Attendance - Tech Expo Deck</title>
+  <style>
+    :root {
+      --bg-dark: #0b1120;
+      --card-bg: #162136;
+      --card-border: #263859;
+      --cyan: #38bdf8;
+      --emerald: #34d399;
+      --amber: #fbbf24;
+      --text-white: #ffffff;
+      --text-muted: #a0aec0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-white);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    header {
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--card-border);
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--cyan);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-white);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      border-color: var(--cyan);
+      color: var(--cyan);
+    }
+
+    .btn-primary {
+      background: #0284c7;
+      border-color: #38bdf8;
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      background: #0369a1;
+      color: #ffffff;
+    }
+
+    .deck-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 30px 16px;
+    }
+
+    .slide-wrapper {
+      width: 100%;
+      max-width: 1050px;
+      aspect-ratio: 16 / 9;
+      background: var(--bg-dark);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      padding: 44px 52px;
+    }
+
+    .slide {
+      display: none;
+      height: 100%;
+      flex-direction: column;
+      justify-content: center;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .slide.active {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .slide-tag {
+      color: var(--cyan);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 8px;
+    }
+
+    .slide-title {
+      font-size: 34px;
+      font-weight: 800;
+      color: var(--text-white);
+      margin-bottom: 24px;
+      line-height: 1.2;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1.5px solid var(--card-border);
+      border-radius: 14px;
+      padding: 36px 40px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .border-cyan { border-color: var(--cyan); }
+    .border-emerald { border-color: var(--emerald); }
+    .border-amber { border-color: var(--amber); }
+
+    .bullet-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .bullet-list li {
+      font-size: 17px;
+      color: var(--text-white);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .bullet-list li .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    .dot-cyan { background-color: var(--cyan); }
+    .dot-emerald { background-color: var(--emerald); }
+    .dot-amber { background-color: var(--amber); }
+
+    .highlight-cyan { color: var(--cyan); font-weight: 700; }
+    .highlight-emerald { color: var(--emerald); font-weight: 700; }
+    .highlight-amber { color: var(--amber); font-weight: 700; }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 24px;
+    }
+
+    .slide-counter {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-muted);
+      min-width: 80px;
+      text-align: center;
+    }
+
+    .keyboard-hint {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 8px;
+      text-align: center;
+    }
+
+    :fullscreen .slide-wrapper {
+      max-width: 100vw;
+      width: 100vw;
+      height: 100vh;
+      border-radius: 0;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <span style="font-size: 18px;">🏛️</span>
+      <span class="brand-title">Smart Face Attendance — Tech Expo (4 Slides)</span>
+    </div>
+    <div class="header-actions">
+      <button class="btn" onclick="toggleFullscreen()">⛶ Fullscreen (F)</button>
+      <a href="/api/presentation/download" download class="btn btn-primary">⬇ Download .PPTX</a>
+    </div>
+  </header>
+
+  <main class="deck-container">
+    <div class="slide-wrapper" id="slideCanvas">
+
+      <!-- SLIDE 1: Title -->
+      <div class="slide active">
+        <div class="card border-cyan">
+          <div class="slide-tag">TECH EXPO PROJECT DEMO</div>
+          <div class="slide-title" style="margin-bottom: 8px;">Smart Face Recognition Attendance</div>
+          <p style="font-size: 15px; color: var(--text-muted); margin-bottom: 28px;">Contactless, real-time campus attendance system</p>
+          <ul class="bullet-list">
+            <li><span class="dot dot-cyan"></span> Fast walk-through entry with zero stopping</li>
+            <li><span class="dot dot-cyan"></span> Runs on standard PC / laptop (No GPU required)</li>
+            <li><span class="dot dot-cyan"></span> Stops proxy attendance completely</li>
+            <li><span class="dot dot-cyan"></span> Instant live dashboard & 1-click Excel download</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- SLIDE 2: What Is It? -->
+      <div class="slide">
+        <div class="slide-tag">OVERVIEW</div>
+        <div class="slide-title">What Is This Project?</div>
+        <div class="card border-emerald">
+          <ul class="bullet-list">
+            <li><span class="dot dot-emerald"></span> <span><strong class="highlight-emerald">Walk-Through Attendance:</strong> Students walk naturally past the camera without waiting in queues.</span></li>
+            <li><span class="dot dot-emerald"></span> <span><strong class="highlight-emerald">Replaces Slow Hardware:</strong> Eliminates slow fingerprint scanners and manual paper roll calls.</span></li>
+            <li><span class="dot dot-emerald"></span> <span><strong class="highlight-emerald">Zero Buddy Punching:</strong> Nobody can mark attendance for absent friends.</span></li>
+            <li><span class="dot dot-emerald"></span> <span><strong class="highlight-emerald">Voice Greetings & Logging:</strong> Recognizes the face, speaks their name, and records attendance.</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- SLIDE 3: Technologies Used -->
+      <div class="slide">
+        <div class="slide-tag">TECH STACK</div>
+        <div class="slide-title">Technologies Used</div>
+        <div class="card border-cyan">
+          <ul class="bullet-list">
+            <li><span class="dot dot-cyan"></span> <span><strong class="highlight-cyan">Face Detection & Recognition:</strong> OpenCV YuNet + ArcFace ONNX models</span></li>
+            <li><span class="dot dot-cyan"></span> <span><strong class="highlight-cyan">Crowd Tracking:</strong> ByteTrack algorithm (tracks moving groups in real time)</span></li>
+            <li><span class="dot dot-cyan"></span> <span><strong class="highlight-cyan">Backend Server:</strong> Python, FastAPI, and SQLite database</span></li>
+            <li><span class="dot dot-cyan"></span> <span><strong class="highlight-cyan">Frontend Dashboard:</strong> React 19, Vite, and HTML5 Canvas (60 FPS camera feed)</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- SLIDE 4: How It Works -->
+      <div class="slide">
+        <div class="slide-tag">PROCESS</div>
+        <div class="slide-title">How It Works (4 Steps)</div>
+        <div class="card border-amber">
+          <ul class="bullet-list">
+            <li><span class="dot dot-amber"></span> <span><strong class="highlight-amber">Step 1: Capture —</strong> Camera captures live video of people entering.</span></li>
+            <li><span class="dot dot-amber"></span> <span><strong class="highlight-amber">Step 2: Detect & Track —</strong> YuNet finds faces, ByteTrack assigns continuous IDs.</span></li>
+            <li><span class="dot dot-amber"></span> <span><strong class="highlight-amber">Step 3: Vector Match —</strong> ArcFace matches face embeddings in under 0.4 milliseconds.</span></li>
+            <li><span class="dot dot-amber"></span> <span><strong class="highlight-amber">Step 4: Mark & Announce —</strong> Logs attendance in database, speaks name, and updates dashboard.</span></li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <button class="btn" onclick="prevSlide()">❮ Previous</button>
+      <div class="slide-counter" id="slideNum">1 / 4</div>
+      <button class="btn btn-primary" onclick="nextSlide()">Next ❯</button>
+    </div>
+    <div class="keyboard-hint">
+      Use <strong>&larr; / &rarr;</strong> or <strong>Space</strong> to navigate &bull; Press <strong>F</strong> for fullscreen
+    </div>
+  </main>
+
+  <script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+    const slideNumEl = document.getElementById('slideNum');
+
+    function updateSlide() {
+      slides.forEach((s, idx) => {
+        s.classList.toggle('active', idx === currentSlide);
+      });
+      slideNumEl.textContent = `${currentSlide + 1} / ${totalSlides}`;
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides - 1) {
+        currentSlide++;
+        updateSlide();
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) {
+        currentSlide--;
+        updateSlide();
+      }
+    }
+
+    function toggleFullscreen() {
+      const el = document.getElementById('slideCanvas');
+      if (!document.fullscreenElement) {
+        el.requestFullscreen().catch(err => alert("Could not enter fullscreen"));
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        prevSlide();
+      } else if (e.key.toLowerCase() === 'f') {
+        toggleFullscreen();
+      }
+    });
+
+    updateSlide();
+  </script>
+</body>
+</html>
