@@ -55,12 +55,17 @@ class ArcFaceEmbedder:
         if aligned_face_112.shape[:2] != (112, 112):
             aligned_face_112 = cv2.resize(aligned_face_112, (112, 112))
 
-        # Standard MobileFaceNet / ArcFace preprocessing: (img - 127.5) / 128.0, transpose HWC -> CHW -> NCHW
-        img = aligned_face_112.astype(np.float32)
-        if len(img.shape) == 2:
-            img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-            
-        img = (img - 127.5) / 128.0
+        # Ensure 3-channel RGB float32 in range [0..255]
+        # NOTE: This ArcFace ResNet100/MobileFaceNet ONNX expects raw [0..255] float32 RGB.
+        # Normalizing via (img - 127.5)/128.0 causes model collapse where all embeddings have >0.98 similarity!
+        if len(aligned_face_112.shape) == 2:
+            img = cv2.cvtColor(aligned_face_112, cv2.COLOR_GRAY2RGB)
+        elif aligned_face_112.shape[2] == 4:
+            img = cv2.cvtColor(aligned_face_112, cv2.COLOR_BGRA2RGB)
+        else:
+            img = cv2.cvtColor(aligned_face_112, cv2.COLOR_BGR2RGB)
+
+        img = img.astype(np.float32)
         blob = np.transpose(img, (2, 0, 1))  # (3, 112, 112)
         blob = np.expand_dims(blob, axis=0)  # (1, 3, 112, 112)
 

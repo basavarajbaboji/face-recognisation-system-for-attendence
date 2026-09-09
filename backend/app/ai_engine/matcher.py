@@ -60,7 +60,7 @@ class MultiTemplateVectorMatcher:
             # Ambiguity guard: verify top candidate is distinct if multiple people pass threshold
             if len(sorted_users) > 1 and sorted_users[1]["similarity"] >= threshold:
                 margin = best_match["similarity"] - sorted_users[1]["similarity"]
-                if margin < 0.015 and best_match["similarity"] < 0.82:
+                if margin < 0.05:
                     return None, "Unknown", best_match["similarity"], top_matches
 
             return best_match["user_id"], best_match["label"], best_match["similarity"], top_matches

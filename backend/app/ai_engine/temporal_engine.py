@@ -46,12 +46,13 @@ class TemporalConfirmationEngine:
         top_user_id, match_count = counts.most_common(1)[0]
 
         # 3. Check for confirmation threshold:
-        # Fast-path: Instant 1-shot confirmation if exceptionally strong match (confidence >= 0.85)
-        # Consistent-path: min_matches in window for confidence >= threshold
-        is_strong_match = (top_user_id == user_id and confidence >= 0.85)
-        is_consistent_match = (top_user_id == user_id and match_count >= self.min_matches and confidence >= threshold)
+        # BULLETPROOF RULE: Never confirm identity on a single frame!
+        # - High confidence (>= 0.80): requires at least 2 consistent frames in window
+        # - Standard confidence (>= threshold): requires at least min_matches (3) consistent frames in window
+        is_strong_consistent = (top_user_id == user_id and match_count >= 2 and confidence >= 0.80)
+        is_standard_consistent = (top_user_id == user_id and match_count >= self.min_matches and confidence >= threshold)
 
-        if is_strong_match or is_consistent_match:
+        if is_strong_consistent or is_standard_consistent:
             track.identity_state = "CONFIRMED"
             track.confirmed_user_id = user_id
             track.confirmed_user_label = label

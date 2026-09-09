@@ -84,8 +84,14 @@ class YuNetFaceDetector:
             h = int(round(face[3] * inv_scale))
             score = float(face[14])
             
-            # Minimum size threshold to ignore micro background noise
-            if w < 30 or h < 30 or score < 0.55:
+            # Minimum size threshold to ignore micro background noise and low confidence proposals
+            if w < 40 or h < 40 or score < 0.62:
+                continue
+
+            # Aspect ratio check: Human faces have aspect ratios roughly between 0.55 and 1.45
+            # Rejects vertical door/cupboard panels and wide background artifacts
+            aspect_ratio = float(w) / float(h)
+            if aspect_ratio < 0.55 or aspect_ratio > 1.45:
                 continue
 
             # Clamp coordinates
@@ -105,6 +111,11 @@ class YuNetFaceDetector:
                 [face[12] * inv_scale, face[13] * inv_scale]  # Left mouth corner
             ], dtype=np.float32)
 
+            # Facial geometry sanity: Distance between eyes must be >= 18% of face bounding box width
+            eye_dist = float(np.linalg.norm(landmarks[0] - landmarks[1]))
+            if eye_dist < 0.18 * w:
+                continue
+
             raw_boxes.append([x1, y1, w, h])
             raw_scores.append(score)
             raw_landmarks.append(landmarks)
@@ -113,7 +124,7 @@ class YuNetFaceDetector:
             return []
 
         # Strict Non-Maximum Suppression (NMS) to eliminate duplicate overlapping face proposals
-        indices = cv2.dnn.NMSBoxes(raw_boxes, raw_scores, score_threshold=0.55, nms_threshold=0.30)
+        indices = cv2.dnn.NMSBoxes(raw_boxes, raw_scores, score_threshold=0.62, nms_threshold=0.30)
         
         results = []
         if len(indices) > 0:
