@@ -11,6 +11,7 @@ import {
   Video, 
   RefreshCw 
 } from 'lucide-react';
+import { API_BASE } from '../config';
 
 export default function Settings() {
   const [cameraList, setCameraList] = useState([]);
@@ -31,7 +32,7 @@ export default function Settings() {
 
   const fetchCameras = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/camera/list');
+      const res = await fetch(`${API_BASE}/api/camera/list`);
       if (res.ok) {
         setCameraList(await res.json());
       }
@@ -43,7 +44,7 @@ export default function Settings() {
   const scanHardware = async () => {
     setScanningHw(true);
     try {
-      const res = await fetch('http://localhost:8000/api/camera/detect');
+      const res = await fetch(`${API_BASE}/api/camera/detect`);
       if (res.ok) {
         setHardwareCams(await res.json());
       }
@@ -56,7 +57,7 @@ export default function Settings() {
 
   const handleAttachCamera = async (cam) => {
     try {
-      const res = await fetch('http://localhost:8000/api/camera/attach', {
+      const res = await fetch(`${API_BASE}/api/camera/attach`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -78,7 +79,7 @@ export default function Settings() {
 
   const handleDetachCamera = async (camId) => {
     try {
-      const res = await fetch('http://localhost:8000/api/camera/detach', {
+      const res = await fetch(`${API_BASE}/api/camera/detach`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: camId })
@@ -96,7 +97,7 @@ export default function Settings() {
 
   const fetchSettings = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/camera/settings');
+      const res = await fetch(`${API_BASE}/api/camera/settings`);
       if (res.ok) {
         const data = await res.json();
         if (data.similarity_threshold !== undefined) setSimilarityThreshold(parseFloat(data.similarity_threshold));
@@ -120,7 +121,7 @@ export default function Settings() {
     if (!newCamName.trim()) return;
     setCamLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/api/camera/add', {
+      const res = await fetch(`${API_BASE}/api/camera/add`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -146,7 +147,7 @@ export default function Settings() {
   const handleDeleteCamera = async (camId) => {
     if (!confirm(`Are you sure you want to remove this camera permanently?`)) return;
     try {
-      const res = await fetch(`http://localhost:8000/api/camera/${camId}`, {
+      const res = await fetch(`${API_BASE}/api/camera/${camId}`, {
         method: 'DELETE'
       });
       if (res.ok) {
@@ -162,7 +163,7 @@ export default function Settings() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/api/camera/settings', {
+      const res = await fetch(`${API_BASE}/api/camera/settings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -23,10 +23,10 @@ YUNET_MODEL_URL = "https://raw.githubusercontent.com/opencv/opencv_zoo/main/mode
 ARCFACE_MODEL_URL = "https://github.com/natanielruiz/arcface-onnx/raw/master/arcface_mobilefacenet.onnx"
 
 # Default Surveillance & Attendance Thresholds
-DEFAULT_SIMILARITY_THRESHOLD = 0.55
-DEFAULT_MIN_QUALITY_SCORE = 10.0  # Sharpness / Laplacian variance threshold (realistic for live webcam)
-DEFAULT_TEMPORAL_WINDOW = 4       # Check last 4 frames
-DEFAULT_TEMPORAL_MIN_MATCHES = 2  # Require 2 matches in window for borderline match (instant on strong match)
+DEFAULT_SIMILARITY_THRESHOLD = 0.68  # 0.68 ensures <0.01% FAR (False Acceptance Rate) on strangers
+DEFAULT_MIN_QUALITY_SCORE = 15.0     # Sharpness / Laplacian variance threshold
+DEFAULT_TEMPORAL_WINDOW = 5          # Check last 5 frames
+DEFAULT_TEMPORAL_MIN_MATCHES = 3     # Require 3 consistent matches across window
 DEFAULT_ATTENDANCE_COOLDOWN_MINUTES = 10  # 10 min debounce before logging again
 DEFAULT_TRACK_RECOG_TTL_FRAMES = 20       # Re-check recognition after 20 frames
 

@@ -304,14 +304,36 @@ async def enroll_bulk_zip(
 
 @router.delete("/{user_id}")
 async def delete_user(user_id: int):
-    """Deletes user and cascades to all embedding templates."""
+    """Deletes user and cascades to all embedding templates, photos, and logs."""
     async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("PRAGMA foreign_keys = ON;")
+        
+        # Get photo_path before deleting to clean up files
+        async with db.execute("SELECT photo_path FROM users WHERE id = ?;", (user_id,)) as cursor:
+            row = await cursor.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail="User not found")
+            photo_rel_path = row[0]
+            if photo_rel_path:
+                try:
+                    fname = Path(photo_rel_path).name
+                    fpath = FACES_DIR / fname
+                    if fpath.exists():
+                        fpath.unlink()
+                except Exception as e:
+                    logger.warning(f"Could not delete photo file for user {user_id}: {e}")
+
+        # Explicitly delete all associated templates and events to guarantee clean DB
+        await db.execute("DELETE FROM user_embeddings WHERE user_id = ?;", (user_id,))
+        await db.execute("DELETE FROM attendance_events WHERE user_id = ?;", (user_id,))
         await db.execute("DELETE FROM users WHERE id = ?;", (user_id,))
+        
         await db.execute("""
             INSERT INTO audit_logs (action, actor, details)
             VALUES ('Delete User', 'Admin', ?);
         """, (f"Deleted user ID {user_id}",))
         await db.commit()
 
+    # Immediately hot-reload in-memory embeddings across all active camera pipelines
     await camera_manager.reload_vectors()
     return {"status": "success", "message": f"Deleted user {user_id}"}

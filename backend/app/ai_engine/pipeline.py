@@ -95,7 +95,9 @@ class SurveillanceAttendancePipeline:
 
         for track in active_tracks:
             # Check if this track needs an ArcFace inference run
-            if track.needs_recognition(min_quality=self.min_quality_score) and track.landmarks is not None:
+            # Enforce minimum face bounding box size (>= 45x45px) to prevent false positives on tiny distant background faces
+            w_box, h_box = track.bbox[2], track.bbox[3]
+            if w_box >= 45 and h_box >= 45 and track.needs_recognition(min_quality=self.min_quality_score) and track.landmarks is not None:
                 aligned_crop = self.aligner.align_face(frame, track.landmarks)
                 emb = self.embedder.extract_embedding(aligned_crop)
 

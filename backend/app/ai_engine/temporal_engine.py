@@ -23,7 +23,16 @@ class TemporalConfirmationEngine:
 
         # 1. If currently no match (below threshold)
         if user_id is None:
-            if track.identity_state != "CONFIRMED":
+            if track.identity_state == "CONFIRMED":
+                # Decay identity if last 3 frames continuously fail to match
+                recent_samples = list(track.match_history)[-3:]
+                non_matches = sum(1 for m in recent_samples if m[0] is None or m[0] != track.confirmed_user_id)
+                if non_matches >= 3:
+                    track.identity_state = "UNKNOWN"
+                    track.confirmed_user_id = None
+                    track.confirmed_user_label = None
+                    track.confirmed_confidence = 0.0
+            else:
                 track.identity_state = "UNKNOWN"
             return track.identity_state
 
@@ -37,10 +46,10 @@ class TemporalConfirmationEngine:
         top_user_id, match_count = counts.most_common(1)[0]
 
         # 3. Check for confirmation threshold:
-        # Fast-path: Instant 1-shot confirmation if strong match (confidence >= 0.58)
-        # Consistent-path: 2 matches in window for moderate confidence
-        is_strong_match = (top_user_id == user_id and confidence >= 0.58)
-        is_consistent_match = (top_user_id == user_id and match_count >= 2)
+        # Fast-path: Instant 1-shot confirmation if exceptionally strong match (confidence >= 0.85)
+        # Consistent-path: min_matches in window for confidence >= threshold
+        is_strong_match = (top_user_id == user_id and confidence >= 0.85)
+        is_consistent_match = (top_user_id == user_id and match_count >= self.min_matches and confidence >= threshold)
 
         if is_strong_match or is_consistent_match:
             track.identity_state = "CONFIRMED"

@@ -15,6 +15,7 @@ import {
   MapPin,
   X
 } from 'lucide-react';
+import { API_BASE } from '../config';
 
 export default function AttendanceReport() {
   const [activeTab, setActiveTab] = useState('present'); // 'present' or 'absent'
@@ -34,13 +35,13 @@ export default function AttendanceReport() {
     setLoading(true);
     try {
       // 1. Fetch Present Records
-      const pRes = await fetch(`http://localhost:8000/api/attendance/present?date=${selectedDate}&department=${selectedDept}&role=${selectedRole}`);
+      const pRes = await fetch(`${API_BASE}/api/attendance/present?date=${selectedDate}&department=${selectedDept}&role=${selectedRole}`);
       if (pRes.ok) {
         setPresentList(await pRes.json());
       }
 
       // 2. Fetch Absent Records
-      const aRes = await fetch(`http://localhost:8000/api/attendance/absent?date=${selectedDate}&department=${selectedDept}&role=${selectedRole}`);
+      const aRes = await fetch(`${API_BASE}/api/attendance/absent?date=${selectedDate}&department=${selectedDept}&role=${selectedRole}`);
       if (aRes.ok) {
         setAbsentList(await aRes.json());
       }
@@ -67,7 +68,7 @@ export default function AttendanceReport() {
   );
 
   const handleExportExcel = () => {
-    window.open(`http://localhost:8000/api/attendance/export/excel?date=${selectedDate}`, '_blank');
+    window.open(`${API_BASE}/api/attendance/export/excel?date=${selectedDate}`, '_blank');
   };
 
   return (

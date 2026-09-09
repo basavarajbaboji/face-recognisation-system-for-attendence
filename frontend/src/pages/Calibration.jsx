@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Sliders, Activity, ShieldCheck, Target, RefreshCw, Info } from 'lucide-react';
+import { API_BASE } from '../config';
 
 export default function Calibration() {
   const [rocData, setRocData] = useState(null);
@@ -9,7 +10,7 @@ export default function Calibration() {
   const fetchCalibration = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/api/calibration/evaluate');
+      const res = await fetch(`${API_BASE}/api/calibration/evaluate`);
       if (res.ok) {
         const data = await res.json();
         setRocData(data);
@@ -30,7 +31,7 @@ export default function Calibration() {
 
   const handleApplyThreshold = async (thresholdVal) => {
     try {
-      const res = await fetch('http://localhost:8000/api/camera/settings', {
+      const res = await fetch(`${API_BASE}/api/camera/settings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ similarity_threshold: thresholdVal })

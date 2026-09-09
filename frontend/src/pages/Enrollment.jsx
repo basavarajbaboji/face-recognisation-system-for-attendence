@@ -9,8 +9,11 @@ import {
   Search, 
   FileArchive,
   Layers,
-  Sparkles
+  Sparkles,
+  RefreshCw,
+  X
 } from 'lucide-react';
+import { API_BASE } from '../config';
 
 export default function Enrollment() {
   const [enrollMode, setEnrollMode] = useState('single'); // 'single' or 'bulk'
@@ -41,12 +44,14 @@ export default function Enrollment() {
 
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState(null);
+  const [deleteConfirmUser, setDeleteConfirmUser] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
 
   const departments = ['Computer Science', 'Mechanical', 'Electrical', 'Civil', 'Electronics', 'Information Tech', 'Management / MBA'];
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/users/');
+      const res = await fetch(`${API_BASE}/api/users/`);
       if (res.ok) {
         setUsersList(await res.json());
       }
@@ -118,7 +123,7 @@ export default function Enrollment() {
     if (rightPhoto) formData.append('right_photo', rightPhoto);
 
     try {
-      const res = await fetch('http://localhost:8000/api/users/enroll-single', {
+      const res = await fetch(`${API_BASE}/api/users/enroll-single`, {
         method: 'POST',
         body: formData
       });
@@ -157,7 +162,7 @@ export default function Enrollment() {
     formData.append('default_role', role);
 
     try {
-      const res = await fetch('http://localhost:8000/api/users/enroll-bulk-zip', {
+      const res = await fetch(`${API_BASE}/api/users/enroll-bulk-zip`, {
         method: 'POST',
         body: formData
       });
@@ -175,15 +180,22 @@ export default function Enrollment() {
     }
   };
 
-  const handleDeleteUser = async (userId, userName) => {
-    if (!confirm(`Are you sure you want to delete ${userName}? This will remove all templates.`)) return;
+  const executeDeleteUser = async (userId, userName) => {
+    setDeletingId(userId);
     try {
-      const res = await fetch(`http://localhost:8000/api/users/${userId}`, { method: 'DELETE' });
+      const res = await fetch(`${API_BASE}/api/users/${userId}`, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        fetchUsers();
+        setMsg({ type: 'success', text: `Successfully removed ${userName} and all associated templates.` });
+        setDeleteConfirmUser(null);
+        await fetchUsers();
+      } else {
+        setMsg({ type: 'error', text: `Failed to delete: ${data.detail || res.statusText}` });
       }
     } catch (e) {
-      alert("Error deleting user: " + e.message);
+      setMsg({ type: 'error', text: "Error deleting user: " + e.message });
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -502,7 +514,7 @@ export default function Enrollment() {
                     <td>
                       <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#1e293b', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         {u.photo_path ? (
-                          <img src={`http://localhost:8000${u.photo_path}`} alt={u.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <img src={`${API_BASE}${u.photo_path}`} alt={u.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
                           <UserPlus size={18} color="#94a3b8" />
                         )}
@@ -526,8 +538,8 @@ export default function Enrollment() {
                     <td>
                       <button 
                         className="btn btn-danger" 
-                        style={{ padding: '4px 10px', fontSize: '0.75rem' }}
-                        onClick={() => handleDeleteUser(u.id, u.name)}
+                        style={{ padding: '4px 10px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                        onClick={() => setDeleteConfirmUser(u)}
                         title="Delete Profile"
                       >
                         <Trash2 size={13} />
@@ -547,6 +559,93 @@ export default function Enrollment() {
           </table>
         </div>
       </div>
+
+      {/* In-App Delete Confirmation Modal (Cannot be blocked by browser) */}
+      {deleteConfirmUser && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(2, 6, 23, 0.8)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '20px'
+        }}>
+          <div 
+            className="glass-panel" 
+            style={{ 
+              width: '100%', 
+              maxWidth: '440px', 
+              padding: '26px', 
+              borderRadius: '16px', 
+              border: '1px solid rgba(239, 68, 68, 0.45)', 
+              textAlign: 'center',
+              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(239, 68, 68, 0.2)'
+            }}
+          >
+            <div style={{
+              width: '52px',
+              height: '52px',
+              borderRadius: '50%',
+              background: 'rgba(239, 68, 68, 0.15)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px'
+            }}>
+              <Trash2 size={26} color="#f87171" />
+            </div>
+
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 600, color: '#f8fafc', marginBottom: '8px' }}>
+              Delete Biometric Profile?
+            </h3>
+            
+            <p style={{ fontSize: '0.86rem', color: '#94a3b8', marginBottom: '22px', lineHeight: 1.5 }}>
+              Are you sure you want to delete <strong style={{ color: '#ffffff' }}>{deleteConfirmUser.name}</strong> (Roll: <span className="font-mono" style={{ color: '#38bdf8' }}>{deleteConfirmUser.roll_number}</span>)? This will permanently remove their face embeddings from live camera recognition.
+            </p>
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <button 
+                className="btn btn-secondary" 
+                style={{ padding: '8px 20px', fontSize: '0.85rem' }}
+                onClick={() => setDeleteConfirmUser(null)}
+                disabled={deletingId !== null}
+              >
+                Cancel
+              </button>
+
+              <button 
+                className="btn btn-danger" 
+                style={{ 
+                  padding: '8px 22px', 
+                  fontSize: '0.85rem', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '6px',
+                  background: '#ef4444'
+                }}
+                onClick={() => executeDeleteUser(deleteConfirmUser.id, deleteConfirmUser.name)}
+                disabled={deletingId !== null}
+              >
+                {deletingId ? (
+                  <>
+                    <RefreshCw size={14} className="animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={14} />
+                    <span>Confirm Delete</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

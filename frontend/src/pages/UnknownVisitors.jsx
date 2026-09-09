@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { UserX, Clock, MapPin, Eye, Trash2, RefreshCw } from 'lucide-react';
+import { API_BASE } from '../config';
 
 export default function UnknownVisitors() {
   const [visitors, setVisitors] = useState([]);
@@ -8,7 +9,7 @@ export default function UnknownVisitors() {
   const fetchUnknowns = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/api/unknown/');
+      const res = await fetch(`${API_BASE}/api/unknown/`);
       if (res.ok) {
         setVisitors(await res.json());
       }
@@ -25,7 +26,7 @@ export default function UnknownVisitors() {
 
   const handleDelete = async (id) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/unknown/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_BASE}/api/unknown/${id}`, { method: 'DELETE' });
       if (res.ok) {
         setVisitors(visitors.filter(v => v.id !== id));
       }
@@ -65,7 +66,7 @@ export default function UnknownVisitors() {
               <div style={{ width: '100%', height: '180px', background: '#020617', borderRadius: '8px', overflow: 'hidden', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {v.best_snapshot_path ? (
                   <img 
-                    src={`http://localhost:8000${v.best_snapshot_path}`} 
+                    src={`${API_BASE}${v.best_snapshot_path}`} 
                     alt={`Unknown #${v.track_id}`} 
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                   />

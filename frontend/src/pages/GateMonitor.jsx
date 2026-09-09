@@ -24,8 +24,10 @@ import {
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
+import { API_BASE, getWsUrl } from '../config';
 
 export default function GateMonitor({ voiceEnabled }) {
+  const [isBackendConnected, setIsBackendConnected] = useState(true);
   const [summary, setSummary] = useState({
     total_enrolled: 0,
     present_count: 0,
@@ -95,21 +97,26 @@ export default function GateMonitor({ voiceEnabled }) {
   // Fetch High-Level Summary Stats
   const fetchSummary = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/attendance/summary');
+      const res = await fetch(`${API_BASE}/api/attendance/summary`);
       if (res.ok) {
         setSummary(await res.json());
+        setIsBackendConnected(true);
+      } else {
+        setIsBackendConnected(false);
       }
     } catch (e) {
       console.warn("Could not fetch summary:", e);
+      setIsBackendConnected(false);
     }
   };
 
   // Fetch Cameras List
   const fetchCameras = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/camera/list');
+      const res = await fetch(`${API_BASE}/api/camera/list`);
       if (res.ok) {
         const data = await res.json();
+        setIsBackendConnected(true);
         if (data && data.length > 0) {
           setCameraList(data);
           // If selected cam deleted, default to first
@@ -117,9 +124,12 @@ export default function GateMonitor({ voiceEnabled }) {
             setSelectedCamId(data[0].id);
           }
         }
+      } else {
+        setIsBackendConnected(false);
       }
     } catch (e) {
       console.warn("Could not fetch cameras:", e);
+      setIsBackendConnected(false);
     }
   };
 
@@ -127,7 +137,7 @@ export default function GateMonitor({ voiceEnabled }) {
   const fetchHardware = async () => {
     setScanningHardware(true);
     try {
-      const res = await fetch('http://localhost:8000/api/camera/detect');
+      const res = await fetch(`${API_BASE}/api/camera/detect`);
       if (res.ok) {
         setDetectedHardware(await res.json());
       }
@@ -141,7 +151,7 @@ export default function GateMonitor({ voiceEnabled }) {
   // Attach Camera to Process (Start AI Vision)
   const handleAttachCamera = async (cam) => {
     try {
-      const res = await fetch('http://localhost:8000/api/camera/attach', {
+      const res = await fetch(`${API_BASE}/api/camera/attach`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -164,7 +174,7 @@ export default function GateMonitor({ voiceEnabled }) {
   // Detach Camera from Process (Release Hardware Handle, 0% CPU)
   const handleDetachCamera = async (camId) => {
     try {
-      const res = await fetch('http://localhost:8000/api/camera/detach', {
+      const res = await fetch(`${API_BASE}/api/camera/detach`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: camId })
@@ -278,13 +288,32 @@ export default function GateMonitor({ voiceEnabled }) {
     let isMounted = true;
 
     const connectWs = () => {
-      ws = new WebSocket('ws://localhost:8000/api/camera/ws');
+      try {
+        ws = new WebSocket(getWsUrl('/api/camera/ws'));
+      } catch (err) {
+        if (isMounted) {
+          setIsBackendConnected(false);
+          setStreamError(true);
+          setTimeout(connectWs, 3000);
+        }
+        return;
+      }
+
+      ws.onopen = () => {
+        if (!isMounted) return;
+        setIsBackendConnected(true);
+        setStreamError(false);
+        setStreamKey(Date.now()); // Auto-recover live video stream
+        fetchSummary();
+        fetchCameras();
+      };
       
       ws.onmessage = (event) => {
         if (!isMounted) return;
         try {
           const data = JSON.parse(event.data);
           latestTelemetryRef.current = data;
+          setIsBackendConnected(true);
           setStreamError(false);
 
           drawHUD(data);
@@ -316,12 +345,16 @@ export default function GateMonitor({ voiceEnabled }) {
       };
 
       ws.onerror = () => {
-        if (isMounted) setStreamError(true);
+        if (isMounted) {
+          setStreamError(true);
+          setIsBackendConnected(false);
+        }
       };
 
       ws.onclose = () => {
         if (isMounted) {
-          setTimeout(connectWs, 2500);
+          setIsBackendConnected(false);
+          setTimeout(connectWs, 3000);
         }
       };
     };
@@ -390,7 +423,7 @@ export default function GateMonitor({ voiceEnabled }) {
         formData.append('photo_base64', enrollPhotoPreview);
       }
 
-      const res = await fetch('http://localhost:8000/api/users/quick-enroll', {
+      const res = await fetch(`${API_BASE}/api/users/quick-enroll`, {
         method: 'POST',
         body: formData
       });
@@ -423,7 +456,7 @@ export default function GateMonitor({ voiceEnabled }) {
     e.preventDefault();
     setAddCamLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/api/camera/add', {
+      const res = await fetch(`${API_BASE}/api/camera/add`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -450,6 +483,72 @@ export default function GateMonitor({ voiceEnabled }) {
 
   return (
     <div>
+      {/* Backend Offline / Connection Alert Banner */}
+      {!isBackendConnected && (
+        <div 
+          className="glass-panel"
+          style={{
+            background: 'linear-gradient(90deg, rgba(239, 68, 68, 0.16) 0%, rgba(185, 28, 28, 0.22) 100%)',
+            border: '1px solid rgba(239, 68, 68, 0.45)',
+            borderRadius: '12px',
+            padding: '14px 20px',
+            marginBottom: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '12px',
+            boxShadow: '0 4px 20px rgba(239, 68, 68, 0.15)'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              background: 'rgba(239, 68, 68, 0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <AlertCircle size={22} color="#f87171" />
+            </div>
+            <div>
+              <div style={{ color: '#ffffff', fontWeight: 600, fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                FastAPI Backend Offline (Port 8000)
+                <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: '4px', background: 'rgba(239,68,68,0.3)', color: '#fca5a5' }}>
+                  Disconnected
+                </span>
+              </div>
+              <div style={{ fontSize: '0.8rem', color: '#fca5a5', marginTop: '3px', lineHeight: 1.4 }}>
+                Waiting for backend AI engine to boot. Run <code style={{ background: 'rgba(0,0,0,0.4)', padding: '2px 6px', borderRadius: '4px', color: '#fef08a' }}>python run_system.py</code> or <code style={{ background: 'rgba(0,0,0,0.4)', padding: '2px 6px', borderRadius: '4px', color: '#fef08a' }}>python -m uvicorn backend.app.main:app --port 8000</code> in your terminal.
+              </div>
+            </div>
+          </div>
+          <button 
+            className="btn btn-secondary"
+            style={{ 
+              padding: '7px 16px', 
+              fontSize: '0.8rem', 
+              borderColor: 'rgba(239,68,68,0.5)', 
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+            onClick={() => {
+              fetchSummary();
+              fetchCameras();
+              reloadStream();
+            }}
+          >
+            <RefreshCw size={14} />
+            <span>Retry Connection</span>
+          </button>
+        </div>
+      )}
+
       {/* Top Stat Counters */}
       <div className="stat-grid">
         <div className="stat-card glass-panel enrolled">
@@ -646,7 +745,7 @@ export default function GateMonitor({ voiceEnabled }) {
                   <img 
                     key={`${selectedCamId}-${streamKey}`}
                     ref={videoImgRef}
-                    src={`http://localhost:8000/api/camera/${selectedCamId}/stream?t=${streamKey}`} 
+                    src={`${API_BASE}/api/camera/${selectedCamId}/stream?t=${streamKey}`} 
                     alt="Live Gate Stream" 
                     style={{ width: '100%', height: '100%', objectFit: 'cover', display: streamError ? 'none' : 'block' }}
                     onError={() => setStreamError(true)}
@@ -700,7 +799,7 @@ export default function GateMonitor({ voiceEnabled }) {
                     {isAtt ? (
                       <>
                         <img 
-                          src={`http://localhost:8000/api/camera/${cam.id}/stream?t=${streamKey}`} 
+                          src={`${API_BASE}/api/camera/${cam.id}/stream?t=${streamKey}`} 
                           alt={cam.name}
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />

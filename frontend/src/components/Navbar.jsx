@@ -12,6 +12,7 @@ import {
   VolumeX,
   Presentation
 } from 'lucide-react';
+import { API_BASE } from '../config';
 
 export default function Navbar({ activeTab, setActiveTab, voiceEnabled, setVoiceEnabled, isOnline = true }) {
   const [timeStr, setTimeStr] = useState('');
@@ -68,7 +69,7 @@ export default function Navbar({ activeTab, setActiveTab, voiceEnabled, setVoice
 
       <div className="nav-status">
         <a 
-          href="http://localhost:8000/presentation" 
+          href={`${API_BASE}/presentation`} 
           target="_blank" 
           rel="noreferrer"
           className="btn btn-secondary"

@@ -27,7 +27,7 @@ class MultiTemplateVectorMatcher:
             self.labels = []
             self.embedding_matrix = np.empty((0, 512), dtype=np.float32)
 
-    def match_single(self, query_embedding: np.ndarray, threshold: float = 0.60) -> Tuple[Optional[int], str, float, List[Dict[str, Any]]]:
+    def match_single(self, query_embedding: np.ndarray, threshold: float = 0.68) -> Tuple[Optional[int], str, float, List[Dict[str, Any]]]:
         """
         Matches a single 512-d normalized embedding against all enrolled templates.
         Returns:
@@ -57,6 +57,12 @@ class MultiTemplateVectorMatcher:
 
         best_match = sorted_users[0]
         if best_match["similarity"] >= threshold:
+            # Ambiguity guard: verify top candidate is distinct if multiple people pass threshold
+            if len(sorted_users) > 1 and sorted_users[1]["similarity"] >= threshold:
+                margin = best_match["similarity"] - sorted_users[1]["similarity"]
+                if margin < 0.015 and best_match["similarity"] < 0.82:
+                    return None, "Unknown", best_match["similarity"], top_matches
+
             return best_match["user_id"], best_match["label"], best_match["similarity"], top_matches
         else:
             return None, "Unknown", best_match["similarity"], top_matches
